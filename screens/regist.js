@@ -6,6 +6,7 @@ import {
     View,
 } from 'react-native';
 import {Toolbar, Button} from 'react-native-material-ui';
+import config from '../config'
 
 export class RegistScreen extends Component {
     state = {
@@ -15,7 +16,7 @@ export class RegistScreen extends Component {
     }
 
     onSignUpPress = () => {
-        fetch(`http://10.206.9.79:3000/signup`, {
+        fetch(`${config.server}/signup`, {
             method: 'POST',
             headers: {
                 'Accept': 'application/json',

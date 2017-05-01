@@ -7,6 +7,7 @@ import {
     ScrollView
 } from 'react-native';
 import { Toolbar, ListItem} from 'react-native-material-ui';
+import config from '../config.json'
 
 export class TCurrScreen extends Component {
     state = {
@@ -15,7 +16,7 @@ export class TCurrScreen extends Component {
 
     fetchcurr = () => {
         const teacherid = this.props.navigation.state.account
-        fetch(`http://10.206.9.79:3000/courseallocation/${teacherid}`, {
+        fetch(`${config.server}/courseallocation/${teacherid}`, {
             method: 'GET',
             headers: {
                 'Accept': 'application/json',

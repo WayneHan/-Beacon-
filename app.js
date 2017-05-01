@@ -16,13 +16,14 @@ import {TCurrScreen} from './screens/Tcurriculum';
 import {resetScreen} from './screens/screenreset';
 import {SCurrScreen} from './screens/Scurriculum';
 import {SearchScreen} from './screens/Tsearch'
+//import config from 'config.json'
 
 class HomeScreen extends Component {
     state = {
         isStudent: false
     }
 
-    ComponentDidMount () {
+    ComponentDidMount() {
         //AsyncStorage.getItem
     }
 
@@ -52,18 +53,41 @@ class HomeScreen extends Component {
                             onPress={this.checkcurr}
                         />
                     </View>
-                    {
-                        !this.state.isStudent &&
+
+                    {!this.state.isStudent &&
+                    <View>
+                        <Button
+                            style={{container: {flexDirection: 'row', justifyContent: 'flex-start'}}}
+                            raised
+                            icon="search"
+                            text="修改签到记录"
+                            onPress={() => navigate('Search')}
+                        />
+                    </View>
+                    }
+
+                    {!this.state.isStudent &&
+                    <View>
+                        <Button
+                            style={{container: {flexDirection: 'row', justifyContent: 'flex-start'}}}
+                            raised
+                            icon="search"
+                            text="发起考勤"
+                        />
+                    </View>
+                    }
+
+                    {this.state.isStudent && [
                         <View>
                             <Button
                                 style={{container: {flexDirection: 'row', justifyContent: 'flex-start'}}}
                                 raised
                                 icon="search"
-                                text="修改签到记录"
-                                onPress={() => navigate('Search')}
+                                text="考勤签到"
                             />
                         </View>
-                    }
+                    ]}
+
                     <View>
                         <Button
                             style={{container: {flexDirection: 'row', justifyContent: 'flex-start'}}}
@@ -73,6 +97,7 @@ class HomeScreen extends Component {
                             onPress={() => navigate('FindBcn')}
                         />
                     </View>
+
                     <View>
                         <Button
                             style={{container: {flexDirection: 'row', justifyContent: 'flex-start'}}}
@@ -95,13 +120,13 @@ class InitialScreen extends React.Component {
         password: '',
         isValid: false,
         isStudent: true,
-        logInUser: ''
+        logInAccount: ''
     }
 
     componentDidMount() {
         AsyncStorage.getItem('logInUser').then(
-            logInUser => {
-                if (logInUser) {
+            logInAccount => {
+                if (logInAccount) {
                     this.props.navigation.dispatch(resetScreen('Home'))
                 }
             }
@@ -120,16 +145,16 @@ class InitialScreen extends React.Component {
                 password: this.state.password,
             })
         })
-
-        if (!res.isValid) {
+        const r = JSON.parse(res._bodyText)
+        if (!r.isValid) {
             alert('登陆失败，请检查账号或密码')
             return
         }
-
+        alert('登陆成功')
         // to be discussed
-        const data = await res.json()
-        await AsyncStorage.setItem('logInUser', JSON.stringify())
-        this.props.navigate.dispatch(resetScreen('Home'))
+        //const data = await res.json()
+        //await AsyncStorage.setItem('logInAccount', JSON.stringify())
+        this.props.navigation.dispatch(resetScreen('Home'))
     }
 
 
@@ -166,8 +191,8 @@ class InitialScreen extends React.Component {
                         <Button
                             raised primary
                             icon="check"
-                            onPress={() => navigate('Home')}
-                            //onPress={this.onSignInPress}
+                            //onPress={() => navigate('Home')}
+                            onPress={this.onSignInPress}
                             text="登陆"
                         />
                     </View>

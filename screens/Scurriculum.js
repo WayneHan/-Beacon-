@@ -7,6 +7,7 @@ import {
     ScrollView
 } from 'react-native';
 import {Toolbar, ListItem} from 'react-native-material-ui'
+import config from '../config.json'
 
 export class SCurrScreen extends Component {
     state = {
@@ -15,7 +16,7 @@ export class SCurrScreen extends Component {
 
     fetchscurr = () => {
         const studentid = this.props.navigation.state.account
-        fetch(`http://10.206.9.79:3000/signintable/${studentid}`, {
+        fetch(`${config.server}/signintable/${studentid}`, {
             method: 'GET',
             headers: {
                 'Accept': 'application/json',

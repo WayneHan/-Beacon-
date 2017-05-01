@@ -12,16 +12,34 @@ import {Toolbar, Button, COLOR, ThemeProvider} from 'react-native-material-ui';
 import {RegistScreen} from './screens/regist';
 import {BcnScreen} from  './screens/findBcn';
 import {EditScreen} from './screens/edit';
-import {CurrScreen} from './screens/curriculum';
+import {TCurrScreen} from './screens/Tcurriculum';
+import {resetScreen} from './screens/screenreset';
+import {SCurrScreen} from './screens/Scurriculum';
+import {SearchScreen} from './screens/Tsearch'
 
 class HomeScreen extends Component {
+    state = {
+        isStudent: false
+    }
+
+    ComponentDidMount () {
+        //AsyncStorage.getItem
+    }
+
+    checkcurr = () => {
+        const {navigate} = this.props.navigation
+        this.state.isStudent ? navigate('SCurr', {account: this.state.account}) : navigate('TCurr', {account: this.state.account})
+    }
+
     render() {
+
         const {navigate} = this.props.navigation;
+        const {params} = this.state
 
         return (
             <View style={styles.homeContainer}>
                 <Toolbar
-                    centerElement="Username"
+                    centerElement="课程签到系统"
                     leftElement="person"
                 />
                 <View>
@@ -31,9 +49,21 @@ class HomeScreen extends Component {
                             raised
                             icon="info-outline"
                             text="课程信息"
-                            onPress={() => navigate('Curriculum')}
+                            onPress={this.checkcurr}
                         />
                     </View>
+                    {
+                        !this.state.isStudent &&
+                        <View>
+                            <Button
+                                style={{container: {flexDirection: 'row', justifyContent: 'flex-start'}}}
+                                raised
+                                icon="search"
+                                text="修改签到记录"
+                                onPress={() => navigate('Search')}
+                            />
+                        </View>
+                    }
                     <View>
                         <Button
                             style={{container: {flexDirection: 'row', justifyContent: 'flex-start'}}}
@@ -60,26 +90,46 @@ class HomeScreen extends Component {
 }
 
 class InitialScreen extends React.Component {
-    constructor(props) {
-        super(props);
-        this.state = {
-            account: null,
-            password: null,
-            isValid: false,
-            isStudent: true
-        }
+    state = {
+        account: '',
+        password: '',
+        isValid: false,
+        isStudent: true,
+        logInUser: ''
     }
 
-    onSignInPress = () => {
-        fetch('localhost:3000/signIn', {
+    componentDidMount() {
+        AsyncStorage.getItem('logInUser').then(
+            logInUser => {
+                if (logInUser) {
+                    this.props.navigation.dispatch(resetScreen('Home'))
+                }
+            }
+        )
+    }
+
+    onSignInPress = async() => {
+        const res = await fetch(`http://10.206.9.79:3000/signin`, {
             method: 'POST',
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json',
+            },
             body: JSON.stringify({
-                signInAccount: this.state.account,
-                signInPassword: this.state.password,
+                account: this.state.account,
+                password: this.state.password,
             })
-        }).then((response) => response.isValid == true ? () => {
-                await AsyncStorage.setItem(this.state.account)
-            } : console.log(error))
+        })
+
+        if (!res.isValid) {
+            alert('登陆失败，请检查账号或密码')
+            return
+        }
+
+        // to be discussed
+        const data = await res.json()
+        await AsyncStorage.setItem('logInUser', JSON.stringify())
+        this.props.navigate.dispatch(resetScreen('Home'))
     }
 
 
@@ -116,7 +166,8 @@ class InitialScreen extends React.Component {
                         <Button
                             raised primary
                             icon="check"
-                            onPress={this.onSignInPress}
+                            onPress={() => navigate('Home')}
+                            //onPress={this.onSignInPress}
                             text="登陆"
                         />
                     </View>
@@ -188,8 +239,14 @@ const Initial = StackNavigator({
     EditCode: {
         screen: EditScreen,
     },
-    Curriculum: {
-        screen: CurrScreen,
+    TCurr: {
+        screen: TCurrScreen,
+    },
+    SCurr: {
+        screen: SCurrScreen,
+    },
+    Search: {
+        screen: SearchScreen,
     }
 }, {
     headerMode: 'none'

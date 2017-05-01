@@ -21,7 +21,7 @@ export class BcnScreen extends Component {
         );
         this.state = {
             // region information
-            uuidRef: null,
+            uuidRef: 'E2C56DB5-DFFB-48D2-B060-D0F5A71096E0',
             // React Native ListView datasource initialization
             dataSource: ds.cloneWithRows([]),
             isPressed: true

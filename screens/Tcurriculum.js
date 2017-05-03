@@ -6,36 +6,50 @@ import {
     View,
     ScrollView
 } from 'react-native';
-import { Toolbar, ListItem} from 'react-native-material-ui';
+import { Toolbar, ListItem,Subheader} from 'react-native-material-ui';
 import config from '../config.json'
 
 export class TCurrScreen extends Component {
     state = {
-        curr: {}
+        account: this.props.navigation.state.account,
+        curr: []
     }
 
     fetchcurr = () => {
-        const teacherid = this.props.navigation.state.account
-        fetch(`${config.server}/courseallocation/${teacherid}`, {
-            method: 'GET',
+        console.log('fetching data')
+        fetch(`${config.server}/Message`, {
+            method: 'POST',
             headers: {
                 'Accept': 'application/json',
                 'Content-Type': 'application/json'
-            }
+            },
+            body: JSON.stringify({
+                queryType: '1',
+                teacherid: this.state.account
+            })
         }).then(res => {
-            if(!res.isValid) {
+            if(!res.ok) {
                 alert('搜索失败，请重试')
                 return
             }
-            res.json().then(curr => {
-                this.setState({curr})
-            })
-        })
+            return res.json().then(r => {
+                const tmp = [].concat(this.state.curr, r)
+                this.setState({curr: tmp})
+                }
+            )
+        }).catch(
+            (error) => console.log(error.message)
+        )
+    }
+
+    componentWillMount() {
+        this.fetchcurr()
     }
 
     render() {
         const {goBack} = this.props.navigation
-        const {curr} = this.state.curr
+        const {curr} = this.state
+        const data = {curr}
         return (
             <ScrollView style={styles.container}>
                 <Toolbar
@@ -44,19 +58,29 @@ export class TCurrScreen extends Component {
                     onLeftElementPress={() => goBack()}
                 />
 
-                {this.fetchcurr}
-                <ListItem
-                    divider
-                    leftElement={<Text>班级</Text>}
-                />
-                <ListItem
-                    divider
-                    leftElement={<Text>课程名称</Text>}
-                />
-                <ListItem
-                    divider
-                    leftElement={<Text>课室</Text>}
-                />
+                {data.curr.map((v, index) =>
+                    <View style={{flex: 1}}>
+                        <Subheader
+                            text={`${index + 1}`}
+                        />
+                        <ListItem
+                            divider
+                            leftElement={<Text>班级</Text>}
+                            centerElement={`${v.class}`}
+                        />
+                        <ListItem
+                            divider
+                            leftElement={<Text>课程名称</Text>}
+                            centerElement={`${v.course}`}
+                        />
+                        <ListItem
+                            divider
+                            leftElement={<Text>课程代码</Text>}
+                            centerElement={`${v.allocationcode}`}
+                        />
+                    </View>
+                    )
+                }
             </ScrollView>
         );
     }

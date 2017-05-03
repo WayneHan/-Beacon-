@@ -4,6 +4,7 @@ var app = express();
 
 app.use(bodyParser.json())
 console.log('logging start')
+const merge = ( ...sources) => Object.assign({}, ...sources)
 
 app.post('/signup', function(req, res) {
     let account = req.body.account
@@ -13,6 +14,20 @@ app.post('/signup', function(req, res) {
         isValid: ((account === '123') && (password === '123') && (idnum === '123')) ? true : false,
         isStudent: true
     }
+    res.send(JSON.stringify(data))
+});
+
+app.post('/Message', function(req, res) {
+    const data = [].concat([{
+        class: '3',
+        course: 'c',
+        allocationcode: '002'
+    }], [{
+        class: '2',
+        course: 'b',
+        allocationcode: '001'
+    }])
+    console.log(data)
     res.send(JSON.stringify(data))
 });
 

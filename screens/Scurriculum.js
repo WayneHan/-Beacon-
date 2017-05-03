@@ -6,38 +6,49 @@ import {
     View,
     ScrollView
 } from 'react-native';
-import {Toolbar, ListItem} from 'react-native-material-ui'
+import {Toolbar, ListItem, Subheader} from 'react-native-material-ui'
 import config from '../config.json'
 
 export class SCurrScreen extends Component {
     state = {
-        curr: {}
+        account: this.props.navigation.state.account,
+        curr: []
     }
 
     fetchscurr = () => {
-        const studentid = this.props.navigation.state.account
-        fetch(`${config.server}/signintable/${studentid}`, {
-            method: 'GET',
+        fetch(`${config.server}/Message`, {
+            method: 'POST',
             headers: {
                 'Accept': 'application/json',
                 'Content-Type': 'application/json',
-            }
+            },
+            body: JSON.stringify({
+                queryType: '0',
+                studentid: this.state.account
+            })
         }).then(res => {
-                if (!res.isValid) {
-                    alert('没有符合条件的课程')
-                    return
-                }
-                res.json().then(curr => {
-                        this.setState({curr})
-                    }
-                )
+            //const r = JSON.parse(res._bodyText)
+            if (!res.ok) {
+                alert('没有符合条件的课程')
+                return
             }
+            return res.json().then(r => {
+                const tmp = [].concat(this.state.curr, r)
+                this.setState({curr: tmp})
+            })
+        }).catch(
+            (error) => console.log(error.message)
         )
+    }
+
+    componentWillMount() {
+        this.fetchscurr()
     }
 
     render() {
         const {goBack} = this.props.navigation;
-        const {curr} = this.state.curr
+        const {curr} = this.state
+        const data = {curr}
         return (
             <ScrollView style={styles.container}>
                 <Toolbar
@@ -46,21 +57,28 @@ export class SCurrScreen extends Component {
                     onLeftElementPress={() => goBack()}
                 />
 
-                {this.fetchscurr()}
-                { curr && [
-                    <ListItem
-                        divider
-                        leftElement={<Text>班级</Text>}
-                    />,
-                    <ListItem
-                        divider
-                        leftElement={<Text>课程名称</Text>}
-                    />,
-                    <ListItem
-                        divider
-                        leftElement={<Text>签到次数</Text>}
-                    />
-                ]}
+                {data.curr.map((v, index) =>
+                    <View style={{flex: 1}}>
+                        <Subheader
+                            text={`${index + 1}`}
+                        />
+                        <ListItem
+                            divider
+                            leftElement={<Text>班级</Text>}
+                            centerElement={`${v.class}`}
+                        />
+                        <ListItem
+                            divider
+                            leftElement={<Text>课程名称</Text>}
+                            centerElement={`${v.course}`}
+                        />
+                        <ListItem
+                            divider
+                            leftElement={<Text>签到次数</Text>}
+                            centerElement={`${v.total}`}
+                        />
+                    </View>
+                )}
             </ScrollView>
         );
     }

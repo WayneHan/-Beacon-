@@ -23,8 +23,7 @@ export class BcnScreen extends Component {
             // region information
             uuidRef: 'E2C56DB5-DFFB-48D2-B060-D0F5A71096E0',
             // React Native ListView datasource initialization
-            dataSource: ds.cloneWithRows([]),
-            isPressed: true
+            dataSource: ds.cloneWithRows([])
         };
     }
 
@@ -57,7 +56,7 @@ export class BcnScreen extends Component {
         this.beaconsDidRange = DeviceEventEmitter.addListener(
             'beaconsDidRange',
             (data) => {
-                console.log(data)
+                console.log(data.beacons)
                 this.setState({
                     dataSource: this.state.dataSource.cloneWithRows(data.beacons)
                 });
@@ -72,8 +71,7 @@ export class BcnScreen extends Component {
     onSearchBeacon = () => {
         Beacons.detectIBeacons();
 
-        const uuid = this.state.uuidRef;
-        console.log('Detecting Beacons');
+        const uuid = this.state.uuidRef
         Beacons.startRangingBeaconsInRegion('REGION1', uuid)
             .then(
                 () => console.log('Beacons ranging started succesfully')

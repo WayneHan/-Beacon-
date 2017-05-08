@@ -18,16 +18,20 @@ import {SCurrScreen} from './screens/Scurriculum';
 import {checkScreen} from './screens/checkAttendence'
 import {reportScreen} from './screens/reportAttendence'
 import {SearchScreen} from './screens/Tsearch'
-//import config from 'config.json'
 
 class HomeScreen extends Component {
     state = {
         isStudent: false,
-        account: ''
+        account: null
     }
 
-    ComponentDidMount() {
-        //AsyncStorage.getItem
+    componentDidMount() {
+        AsyncStorage.getItem('logInUser').then(
+            logInUser => {
+                const tmp = JSON.parse(logInUser)
+                this.setState({isStudent: tmp.isStudent, account: tmp.account})
+            }
+        )
     }
 
     checkcurr = () => {
@@ -35,11 +39,10 @@ class HomeScreen extends Component {
         this.state.isStudent ? navigate('SCurr', {account: this.state.account}) : navigate('TCurr', {account: this.state.account})
     }
 
-    signout = () => {
-        const {navigate} = this.props.navigation
-        //AsyncStorage.removeItem().then(
-        this.setState({isStudent: true})
-        navigate.dispatch(resetScreen('Initial'))
+    signout = async () => {
+        await AsyncStorage.clear()
+        alert('登出成功')
+        this.props.navigation.dispatch(resetScreen('Initial'))
     }
 
     checkattendence = () => {
@@ -53,8 +56,7 @@ class HomeScreen extends Component {
     }
 
     render() {
-        const {navigate} = this.props.navigation;
-        const {params} = this.state
+        const {navigate} = this.props.navigation
 
         return (
             <View style={styles.homeContainer}>
@@ -113,16 +115,6 @@ class HomeScreen extends Component {
                         <Button
                             style={{container: {flexDirection: 'row', justifyContent: 'flex-start'}}}
                             raised
-                            icon="search"
-                            text="发现Beacon"
-                            onPress={() => navigate('FindBcn')}
-                        />
-                    </View>
-
-                    <View>
-                        <Button
-                            style={{container: {flexDirection: 'row', justifyContent: 'flex-start'}}}
-                            raised
                             icon="edit"
                             text="修改密码"
                             onPress={this.signout}
@@ -147,50 +139,23 @@ class HomeScreen extends Component {
 
 class InitialScreen extends React.Component {
     state = {
-        account: '',
-        password: '',
-        isValid: false,
-        isStudent: true,
-        logInAccount: ''
+        account: null,
+        password: null,
     }
 
     componentDidMount() {
         AsyncStorage.getItem('logInUser').then(
-            logInAccount => {
-                if (logInAccount) {
+            logInUser => {
+                if (logInUser) {
                     this.props.navigation.dispatch(resetScreen('Home'))
                 }
             }
         )
     }
 
-    /*onSignInPress = async() => {
-     const res = await fetch(`http://coursesigninsys.duapp.com/Connecttoapp`, {
-     method: 'POST',
-     headers: {
-     'Accept': 'application/json',
-     'Content-Type': 'application/json',
-     },
-     body: JSON.stringify({
-     account: this.state.account,
-     password: this.state.password,
-     })
-     })
-     const r = JSON.parse(res._bodyText)
-     if (!r.isValid) {
-     alert('登陆失败，请检查账号或密码')
-     return
-     }
-     alert('登陆成功')
-     // to be discussed
-     //const data = await res.json()
-     //await AsyncStorage.setItem('logInAccount', JSON.stringify())
-     this.props.navigation.dispatch(resetScreen('Home'))
-     }*/
-
-    onSignInPress = () => {
-        fetch(`http://coursesigninsys.duapp.com/AppRegister`, {
-        //fetch(`http://10.206.9.79:3000/signin`, {
+    onSignInPress = async () => {
+        const res = await fetch(`http://coursesigninsys.duapp.com/AppSignIn`, {
+        //const res = await fetch(`http://192.168.31.224:3000/signin`, {
             method: 'POST',
             headers: {
                 'Accept': 'application/json',
@@ -200,76 +165,74 @@ class InitialScreen extends React.Component {
                 account: this.state.account,
                 password: this.state.password
             })
-        }).then(res => {
-            if (!res.ok) {
-                alert('与服务器连接失败，请重试')
-                return
-            }
-            return res.json().then(r => {
-                if (!r.isValid) {
-                    alert('登陆失败，请检查账号或密码')
-                    return
-                }
-                alert('登陆成功')
-                this.setState({isStudent: r.isStudent})
-                //AsyncStorage.setItem('')
-                this.props.navigation.dispatch(resetScreen('Home'))
-            })
-        }).catch(
-            error => console.log(error.message)
-        )
+        })
+        if (!res.ok) {
+            alert('与服务器连接失败，请重试')
+            return
+        }
+
+        const r = await res.json()
+        if (!r.isValid) {
+            alert('登陆失败，请检查账号和登陆密码')
+            return
+        }
+        alert('登陆成功')
+        await AsyncStorage.setItem('logInUser', JSON.stringify({
+            account: this.state.account,
+            isStudent: r.isStudent  //调试
+            //isStudent: true
+        }))
+        this.props.navigation.dispatch(resetScreen('Home'))
     }
 
+    render() {
+        const {navigate} = this.props.navigation;
 
-render()
-{
-    const {navigate} = this.props.navigation;
+        return (
+            <View style={styles.container}>
+                <View>
+                    <Text style={styles.headLine}>
+                        学生课程签到系统
+                    </Text>
+                </View>
 
-    return (
-        <View style={styles.container}>
-            <View>
-                <Text style={styles.headLine}>
-                    学生课程签到系统
-                </Text>
+                <View>
+                    <View style={styles.inputBox}>
+                        <TextInput style={styles.inputText}
+                                   placeholder="学号/教工号"
+                                   keyboardType="numeric"
+                                   onChangeText={(account) => this.setState({account})}/>
+                    </View>
+
+                    <View style={styles.inputBox}>
+                        <TextInput style={styles.inputText}
+                                   placeholder="密码"
+                                   secureTextEntry={true}
+                                   onChangeText={(password) => this.setState({password})}/>
+                    </View>
+                </View>
+
+
+                <View style={styles.buttonBox}>
+                    <View style={styles.signInButton}>
+                        <Button
+                            raised primary
+                            icon="check"
+                            onPress={this.onSignInPress}
+                            text="登陆"
+                        />
+                    </View>
+                    <View style={styles.signUpButton}>
+                        <Button
+                            onPress={() => navigate('Register')}
+                            text="注册"
+                        />
+                    </View>
+                </View>
+
             </View>
-
-            <View>
-                <View style={styles.inputBox}>
-                    <TextInput style={styles.inputText}
-                               placeholder="学号/教工号"
-                               keyboardType="numeric"
-                               onChangeText={(account) => this.setState({account})}/>
-                </View>
-
-                <View style={styles.inputBox}>
-                    <TextInput style={styles.inputText}
-                               placeholder="密码"
-                               secureTextEntry={true}
-                               onChangeText={(password) => this.setState({password})}/>
-                </View>
-            </View>
-
-
-            <View style={styles.buttonBox}>
-                <View style={styles.signInButton}>
-                    <Button
-                        raised primary
-                        icon="check"
-                        onPress={this.onSignInPress}
-                        text="登陆"
-                    />
-                </View>
-                <View style={styles.signUpButton}>
-                    <Button
-                        onPress={() => navigate('Register')}
-                        text="注册"
-                    />
-                </View>
-            </View>
-
-        </View>
-    );
-}
+        );
+    }
 }
 
 const styles = StyleSheet.create({

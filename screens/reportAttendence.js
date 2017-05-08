@@ -4,7 +4,8 @@ import {
     Text,
     TextInput,
     View,
-    DeviceEventEmitter
+    DeviceEventEmitter,
+    AsyncStorage
 } from 'react-native';
 import {Toolbar, Button} from 'react-native-material-ui';
 import Beacons from 'react-native-beacons-manager';
@@ -12,64 +13,107 @@ import config from '../config'
 
 export class reportScreen extends Component {
     state = {
-        account: this.props.navigation.state.account,
-        course: '',
-        uuidRef: '',
+        account: '',
+        uuid: '',
         beacons: {}
+    }
+
+    componentWillMount() {
+        AsyncStorage.getItem('logInUser').then(logInUser => {
+            if (logInUser) {
+                const tmp = JSON.parse(logInUser)
+                this.setState({account: tmp.account})
+            }
+        })
+    }
+
+    componentDidMount() {
+        DeviceEventEmitter.addListener('beaconsDidRange', (data) => {
+            console.log('Found :', data.beacons)
+            if (data.beacons.length) {
+                let tmp = data.beacons
+                console.log("closest beacon :", tmp.sort(this.sort_by('rssi')))
+                this.setState({uuid: tmp[0].uuid})
+                this.onFoundBeacon()
+            }
+        });
+    }
+
+    onFoundBeacon() {
+        if (this.found) {
+            return
+        }
+        this.found = true
+
+        this.fetchresult()
+        Beacons.stopRangingBeaconsInRegion('REGION1').then(
+            () => {
+                console.log('****** stop ranging beacons ******')
+            }
+        ).catch(
+            error => console.log('stop ranging beacons failed')
+        )
+    }
+
+    sort_by = (field, reverse, primer) => {
+        let key = primer ?
+            (x) => {
+                return primer(x[field])
+            } : (x) => {
+                return x[field]
+            };
+        reverse = !reverse ? 1 : -1;
+
+        return (a, b) => {
+            return a = key(a), b = key(b), reverse * ((a > b) - (b > a));
+        }
     }
 
     reportatt = () => {
         Beacons.detectIBeacons()
-        const uuid = this.state.uuidRef
-        Beacons.startRangingBeaconsInRegion('REGION1', uuid).then(
-            () => console.log('start ranging beacons')
+        this.found = false
+        Beacons.startRangingBeaconsInRegion('REGION1').then(
+            () => console.log('****** start ranging beacons ******')
         ).catch(
-            error => console.log('beacon ranging failed')
+            error => {
+                console.log('start ranging beacons failed')
+                alert('搜素beacon失败，请重试')
+            }
         )
-
-        DeviceEventEmitter.addListener('beaconDidRange', (data) => {
-            console.log(data.beacons)
-            this.setState({beacons: data.beacons})
-        })
-        let getData = (data) => {
-            console.log('getData', data.beacons)
-        }
-
-        Beacons.stopRangingBeaconsInRegion('REGION!', uuid).then(
-            () => console.log('stop ranging beacons')
-        ).catch(
-            error => console.log('failed to stop ranging beacons')
-        )
-
-        this.fetchresult()
     }
 
-    fetchresult = () => {
-        const {params} = this.state
-        fetch(`${config.server}/checkattendence`, {
+    fetchresult = async() => {
+        console.log(JSON.stringify({
+            checkType: "0",
+                studentid: this.state.account,
+            uuid: this.state.uuid
+        }))
+        const res = await fetch(`${config.server}/ReportAttendence`, {
             method: 'POST',
             headers: {
                 'Accept': 'application/json',
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify({
-                checkType: false,
-                studentid: params.account,
-                //uuid: params.beacons
-            })
-        }).then(res => {
-            if(!r.ok) {
-                alert('与服务器的连接失败')
-                return
-            }
-            return res.json().then(r => {
-                if(!r.isValid) {
-                    alert('签到失败，请重试')
-                    return
-                }
-                alert('签到成功')
+                checkType: "0",
+                studentid: this.state.account,
+                uuid: this.state.uuid
             })
         })
+        if (!res.ok) {
+            alert('与服务器的连接失败')
+            return
+        }
+        const r = await res.json()
+        if (!r.isValid) {
+            alert('签到失败，请重试')
+            return
+        }
+        alert('签到成功')
+    }
+
+    componentWillUnmount() {
+        this.beaconDidRange = null
     }
 
     render() {
@@ -82,15 +126,16 @@ export class reportScreen extends Component {
                     onLeftElementPress={() => goBack()}
                 />
 
-                <View style={styles.inputBox}>
-                    <TextInput style={styles.inputText}
-                               placeholder="课程代码"
-                               onChangeText={(course) => this.setState({course})}/>
+                <View style={styles.textBox}>
+                    <Text>
+                        请打开手机蓝牙功能，然后在课室 Beacon 设备附近进行签到
+                    </Text>
                 </View>
+
                 <Button
                     primary
                     raised
-                    text="打开蓝牙，记性签到"
+                    text="开始签到"
                     onPress={this.reportatt}
                 />
             </View>
@@ -101,18 +146,8 @@ export class reportScreen extends Component {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        justifyContent: 'center',
     },
-    inputBox: {
-        alignItems: 'center',
-        margin: 10,
-    },
-    inputText: {
-        height: 40,
-        width: 300,
-    },
-    buttonBox: {
-        alignItems: 'center',
-        marginTop: 30,
-    },
+    textBox: {
+        margin: 15
+    }
 });

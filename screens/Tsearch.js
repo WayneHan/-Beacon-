@@ -4,102 +4,99 @@ import {
     Text,
     TextInput,
     View,
-    ScrollView
+    ScrollView,
+    AsyncStorage
 } from 'react-native';
 import {Toolbar, Button, ListItem} from 'react-native-material-ui'
 import config from '../config.json'
 
 export class SearchScreen extends Component {
     state = {
-        account: this.props.navigation.state.account,
+        account: '',
         course: '',
         stuAccount: '',
-        record: {}
+        record: null
     }
 
-    searchPress = () => {
-        const {params} = this.state
-        fetch(`${config.server}/Message`, {
+    componentWillMount() {
+        AsyncStorage.getItem('logInUser').then(
+            logInUser => {
+                if (logInUser) {
+                    const tmp = JSON.parse(logInUser)
+                    this.setState({accout: tmp.account})
+                }
+            }
+        )
+    }
+
+    searchPress = async () => {
+        const res = await fetch(`${config.server}/Message`, {
             method: 'POST',
             headers: {
                 'Accepet': 'application/json',
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify({
-                queryType: '2',
-                course: params.course,
-                studentid: params.stuAccount,
+                queryType: "2",
+                course: this.state.course,
+                id: this.state.stuAccount,
             })
-        }).then(res => {
-            if (!r.ok) {
-                alert('搜索失败，请重试')
-                return
-            }
-            return res.json().then(r => {
-                this.setState({record: {name: r.name, class: r.class, total: r.total}})
-            })
-        }).catch(
-            (error) => console.log(error.message)
-        )
+        })
+        if(!res.ok) {
+            alert('与服务器连接失败')
+            return
+        }
+
+        const r = await res.json()
+        this.setState({record: r})
     }
 
 
-    addRecord = () => {
-        const {params} = this.state
-        fetch(`${config.server}/SignInChange`, {
+    addRecord = async () => {
+        const res = await fetch(`${config.server}/SignInChange`, {
             method: 'POST',
             headers: {
                 'Accept': 'application/json',
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify({
-                changeType: false,
-                course: params.course,
-                studentid: params.stuAccount
+                changeType: "0",
+                course: this.state.course,
+                studentid: this.state.stuAccount
             })
-        }).then(res => {
-            if (!res.ok) {
-                alert('与服务器的连接失败')
-                return
-            }
-            return res.json().then(r => {
-                alert('修改成功, 请重新查询')
-            })
-        }).catch(
-            (error) => console.log(error.message)
-        )
+        })
+
+        if(!res.ok) {
+            alert('与服务器的连接失败')
+            return
+        }
+        alert('修改成功')
+        this.searchPress()
     }
 
-    reduceRecord = () => {
-        const {params} = this.state
-        fetch(`${config.server}/SignInChange`, {
+    reduceRecord = async () => {
+        const res = await fetch(`${config.server}/SignInChange`, {
             method: 'POST',
             headers: {
                 'Accept': 'application/json',
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify({
-                changeType: true,
-                course: params.course,
-                studentid: params.stuAccount,
-                //allocationcode: params.coursecode
+                changeType: "1",
+                course: this.state.course,
+                studentid: this.state.stuAccount
             })
-        }).then(res => {
-            if (!res.ok) {
-                alert('修改失败')
-                return
-            }
-            return res.json().then(r => {
-                alert('修改成功，请重新查询')
-            })
-        }).catch(
-            (error) => console.log(error.message)
-        )
+        })
+        if(!res.ok) {
+            alert('与服务器的连接失败')
+            return
+        }
+        alert('修改成功')
+        this.searchPress()
     }
 
     render() {
-        const {goBack} = this.props.navigation;
-        const {record} = this.state;
+        const {goBack} = this.props.navigation
         return (
             <ScrollView style={styles.container}>
                 <Toolbar
@@ -111,16 +108,13 @@ export class SearchScreen extends Component {
                     <TextInput
                         style={styles.inputText}
                         placeholder="课程名称"
-                        onChangeText={course => {
-                            this.setState(course)
-                        }}
+                        onChangeText={course => this.setState({course})}
                     />
                     <TextInput
                         style={styles.inputText}
                         placeholder="学号"
-                        onChangeText={stuAccount => {
-                            this.setState(stuAccount)
-                        }}
+                        keyboardType="numeric"
+                        onChangeText={stuAccount => this.setState({stuAccount})}
                     />
                 </View>
 
@@ -138,21 +132,21 @@ export class SearchScreen extends Component {
                 </View>
 
 
-                {record.name && [
+                {this.state.record && [
                     <ListItem
                         divider
                         leftElement={<Text>姓名</Text>}
-                        centerElement={`${record.name}`}
+                        centerElement={`${this.state.record.studentname}`}
                     />,
                     <ListItem
                         divider
                         leftElement={<Text>班级</Text>}
-                        centerElement={`${record.class}`}
+                        centerElement={`${this.state.record.class}`}
                     />,
                     <ListItem
                         divider
                         leftElement={<Text>签到次数</Text>}
-                        centerElement={`${record.total}`}
+                        centerElement={`${this.state.record.total}`}
                     />,
                     <View style={styles.buttonBox}>
                         <Button

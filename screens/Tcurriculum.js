@@ -4,46 +4,49 @@ import {
     Text,
     TextInput,
     View,
-    ScrollView
+    ScrollView,
+    AsyncStorage
 } from 'react-native';
 import { Toolbar, ListItem,Subheader} from 'react-native-material-ui';
 import config from '../config.json'
 
 export class TCurrScreen extends Component {
     state = {
-        account: this.props.navigation.state.account,
+        account: null,
         curr: []
     }
 
-    fetchcurr = () => {
-        console.log('fetching data')
-        fetch(`${config.server}/Message`, {
+    fetchscurr = async () => {
+        await AsyncStorage.getItem('logInUser').then(
+            logInUser => {
+                const tmp = JSON.parse(logInUser)
+                this.setState({account: tmp.account})
+            }
+        )
+
+        const res = await fetch(`${config.server}/Message`, {
             method: 'POST',
             headers: {
                 'Accept': 'application/json',
-                'Content-Type': 'application/json'
+                'Content-Type': 'application/json',
             },
             body: JSON.stringify({
-                queryType: '1',
-                teacherid: this.state.account
+                queryType: "1",
+                id: this.state.account
             })
-        }).then(res => {
-            if(!res.ok) {
-                alert('搜索失败，请重试')
-                return
-            }
-            return res.json().then(r => {
-                const tmp = [].concat(this.state.curr, r)
-                this.setState({curr: tmp})
-                }
-            )
-        }).catch(
-            (error) => console.log(error.message)
-        )
+        })
+        if (!res.ok) {
+            alert('没有符合条件的课程')
+            return
+        }
+
+        const r = await res.json()
+        const tmp = [].concat(this.state.curr, r)
+        this.setState({curr: tmp})
     }
 
     componentWillMount() {
-        this.fetchcurr()
+        this.fetchscurr()
     }
 
     render() {
@@ -54,12 +57,12 @@ export class TCurrScreen extends Component {
             <ScrollView style={styles.container}>
                 <Toolbar
                     leftElement="arrow-back"
-                    centerElement="课程信息"
+                    centerElement="教师课程信息"
                     onLeftElementPress={() => goBack()}
                 />
 
                 {data.curr.map((v, index) =>
-                    <View style={{flex: 1}}>
+                    <View style={{flex: 1}} key={index}>
                         <Subheader
                             text={`${index + 1}`}
                         />

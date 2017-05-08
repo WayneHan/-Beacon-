@@ -6,7 +6,6 @@ import {
     View,
 } from 'react-native';
 import { Toolbar, Button} from 'react-native-material-ui';
-import {resetScreen} from 'screenreset'
 import config from '../config.json'
 
 export class EditScreen extends Component {
@@ -37,7 +36,6 @@ export class EditScreen extends Component {
                         return
                     }
                     alert('修改成功，请重新登陆')
-                    //this.props.navigtion.dispatch(resetScreen('Home'))
                 })
             })
         })

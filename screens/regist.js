@@ -13,11 +13,12 @@ export class RegistScreen extends Component {
     state = {
         account: null,
         password: null,
-        isStudent: true
+        isStudent: null
     }
 
-    onSignUpPress = () => {
-        fetch(`${config.server}/AppRegister`, {
+    onSignUpPress = async () => {
+        const status = this.state.isStudent === 'true' ? true : false
+        const res = await fetch(`${config.server}/AppRegister`, {
             method: 'POST',
             headers: {
                 'Accept': 'application/json',
@@ -26,20 +27,21 @@ export class RegistScreen extends Component {
             body: JSON.stringify({
                 account: this.state.account,
                 password: this.state.password,
-                status: this.state.isStudent
+                status: status
             })
-        }).then(res => {
-            console.log('res = ', res)
-            const t = JSON.parse(res._bodyText)
-            console('t = ${t}')
-            if (t.isValid) {
-                alert('注册成功，请重新登陆')
-                this.props.navigation.goBack()
-            }
+        })
+
+        if(!res.ok) {
+            alert('与服务器的连接失败')
+            return
+        }
+        const r = await res.json()
+        if(!r.isValid) {
             alert('注册失败，请检查注册信息')
-        }).catch(
-            (error) => console.log(error.message)
-        )
+            return
+        }
+        alert('注册成功，请重新登陆')
+        this.props.navigation.goBack()
     }
 
     render() {
@@ -57,13 +59,12 @@ export class RegistScreen extends Component {
                         <Text>您的身份：</Text>
                         <Picker
                             selectedValue={this.state.isStudent}
-                            onValueChange={(isStudent) => this.setState({isStudent: isStudent})}>
-                            <Picker.Item label="教师" value="false"/>
-                            <Picker.Item label="学生" value="true"/>
+                            onValueChange={(status) => this.setState({isStudent: status})}>
+                            <Picker.Item label="学生" value="true" />
+                            <Picker.Item label="教师" value="false" />
                         </Picker>
 
                     </View>
-
                     <View style={styles.inputBox}>
                         <TextInput style={styles.inputText}
                                    keyboardType="numeric"

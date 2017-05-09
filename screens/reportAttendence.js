@@ -82,12 +82,7 @@ export class reportScreen extends Component {
         )
     }
 
-    fetchresult = async() => {
-        console.log(JSON.stringify({
-            checkType: "0",
-                studentid: this.state.account,
-            uuid: this.state.uuid
-        }))
+    fetchresult = async () => {
         const res = await fetch(`${config.server}/ReportAttendence`, {
             method: 'POST',
             headers: {

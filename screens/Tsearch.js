@@ -15,6 +15,7 @@ export class SearchScreen extends Component {
         account: '',
         course: '',
         stuAccount: '',
+        loading: false,
         record: null
     }
 
@@ -29,7 +30,12 @@ export class SearchScreen extends Component {
         )
     }
 
-    searchPress = async () => {
+    searchPress = async() => {
+        if ((this.state.stuAccount == null) || (this.state.course == null)){
+            alert('请填写完整信息')
+            return
+        }
+        this.setState({loading: true})
         const res = await fetch(`${config.server}/Message`, {
             method: 'POST',
             headers: {
@@ -42,7 +48,9 @@ export class SearchScreen extends Component {
                 id: this.state.stuAccount,
             })
         })
-        if(!res.ok) {
+
+        this.setState({loading: false})
+        if (!res.ok) {
             alert('与服务器连接失败')
             return
         }
@@ -52,7 +60,7 @@ export class SearchScreen extends Component {
     }
 
 
-    addRecord = async () => {
+    addRecord = async() => {
         const res = await fetch(`${config.server}/SignInChange`, {
             method: 'POST',
             headers: {
@@ -66,7 +74,7 @@ export class SearchScreen extends Component {
             })
         })
 
-        if(!res.ok) {
+        if (!res.ok) {
             alert('与服务器的连接失败')
             return
         }
@@ -74,7 +82,7 @@ export class SearchScreen extends Component {
         this.searchPress()
     }
 
-    reduceRecord = async () => {
+    reduceRecord = async() => {
         const res = await fetch(`${config.server}/SignInChange`, {
             method: 'POST',
             headers: {
@@ -87,7 +95,7 @@ export class SearchScreen extends Component {
                 studentid: this.state.stuAccount
             })
         })
-        if(!res.ok) {
+        if (!res.ok) {
             alert('与服务器的连接失败')
             return
         }
@@ -120,34 +128,42 @@ export class SearchScreen extends Component {
 
                 <View style={styles.searchBox}>
                     <View style={styles.searchButton}>
-                        <Button
-                            primary
-                            raised
-                            icon="search"
-                            text="搜索"
-                            onPress={this.searchPress}
-                        />
+                        {this.state.loading ?
+                            <Button
+                                raised
+                                disabled
+                                text="搜索中..."
+                            /> :
+                            <Button
+                                primary
+                                raised
+                                icon="search"
+                                text="搜索"
+                                onPress={this.searchPress}
+                            />
+                        }
                     </View>
 
                 </View>
 
 
-                {this.state.record && [
+                {this.state.record &&
+                <View>
                     <ListItem
                         divider
                         leftElement={<Text>姓名</Text>}
                         centerElement={`${this.state.record.studentname}`}
-                    />,
+                    />
                     <ListItem
                         divider
                         leftElement={<Text>班级</Text>}
                         centerElement={`${this.state.record.class}`}
-                    />,
+                    />
                     <ListItem
                         divider
                         leftElement={<Text>签到次数</Text>}
                         centerElement={`${this.state.record.total}`}
-                    />,
+                    />
                     <View style={styles.buttonBox}>
                         <Button
                             primary
@@ -163,7 +179,8 @@ export class SearchScreen extends Component {
                             text="次数"
                             onPress={this.reduceRecord}
                         />
-                    </View>]
+                    </View>
+                </View>
                 }
 
             </ScrollView>

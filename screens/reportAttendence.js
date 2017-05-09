@@ -15,6 +15,7 @@ export class reportScreen extends Component {
     state = {
         account: '',
         uuid: '',
+        loading: false,
         beacons: {}
     }
 
@@ -71,6 +72,7 @@ export class reportScreen extends Component {
 
     reportatt = () => {
         Beacons.detectIBeacons()
+        this.setState({loading: true})
         this.found = false
         Beacons.startRangingBeaconsInRegion('REGION1').then(
             () => console.log('****** start ranging beacons ******')
@@ -99,6 +101,8 @@ export class reportScreen extends Component {
             alert('与服务器的连接失败')
             return
         }
+
+        this.setState({loading: false})
         const r = await res.json()
         if (!r.isValid) {
             alert('签到失败，请重试')
@@ -127,12 +131,19 @@ export class reportScreen extends Component {
                     </Text>
                 </View>
 
-                <Button
-                    primary
-                    raised
-                    text="开始签到"
-                    onPress={this.reportatt}
-                />
+                {this.state.loading ?
+                    <Button
+                        raised
+                        disabled
+                        text="签到中..."
+                    /> :
+                    <Button
+                        primary
+                        raised
+                        text="开始签到"
+                        onPress={this.reportatt}
+                    />
+                }
             </View>
         )
     }

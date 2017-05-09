@@ -13,11 +13,17 @@ export class RegistScreen extends Component {
     state = {
         account: null,
         password: null,
-        isStudent: null
+        isStudent: true,
+        loading: false
     }
 
     onSignUpPress = async () => {
-        const status = this.state.isStudent === 'true' ? true : false
+        if ((this.state.account == null) || (this.state.password == null)){
+            alert('请填写完整信息')
+            return
+        }
+        this.setState({loading: true})
+        const status = this.state.isStudent === "true" ? true : false
         const res = await fetch(`${config.server}/AppRegister`, {
             method: 'POST',
             headers: {
@@ -31,6 +37,8 @@ export class RegistScreen extends Component {
             })
         })
 
+        console.log(res)
+        this.setState({loading: false})
         if(!res.ok) {
             alert('与服务器的连接失败')
             return
@@ -80,12 +88,20 @@ export class RegistScreen extends Component {
                     </View>
 
                     <View style={styles.buttonBox}>
-                        <Button
-                            raised primary
-                            icon="check"
-                            text="提交注册"
-                            onPress={this.onSignUpPress}
-                        />
+                        {this.state.loading ?
+                            <Button
+                                raised
+                                disabled
+                                icon="check"
+                                text="注册中..."
+                            /> :
+                            <Button
+                                raised primary
+                                icon="check"
+                                text="提交信息并注册"
+                                onPress={this.onSignUpPress}
+                            />
+                        }
                     </View>
                 </View>
             </View>

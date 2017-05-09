@@ -9,6 +9,7 @@ import {
 } from 'react-native';
 import {StackNavigator} from 'react-navigation';
 import {Toolbar, Button, COLOR, ThemeProvider} from 'react-native-material-ui';
+import Spinner from 'react-native-loading-spinner-overlay';
 import {RegistScreen} from './screens/regist';
 import {BcnScreen} from  './screens/findBcn';
 import {EditScreen} from './screens/edit';
@@ -39,10 +40,15 @@ class HomeScreen extends Component {
         this.state.isStudent ? navigate('SCurr', {account: this.state.account}) : navigate('TCurr', {account: this.state.account})
     }
 
-    signout = async () => {
+    signout = async() => {
         await AsyncStorage.clear()
         alert('登出成功')
         this.props.navigation.dispatch(resetScreen('Initial'))
+    }
+
+    editpassword = () => {
+        const {navigate} = this.props.navigation
+        navigate('Edit')
     }
 
     checkattendence = () => {
@@ -67,6 +73,7 @@ class HomeScreen extends Component {
                 <View>
                     <View>
                         <Button
+                            key="1"
                             style={{container: {flexDirection: 'row', justifyContent: 'flex-start'}}}
                             raised
                             icon="info-outline"
@@ -99,7 +106,7 @@ class HomeScreen extends Component {
                     </View>
                     }
 
-                    {this.state.isStudent && [
+                    {this.state.isStudent &&
                         <View>
                             <Button
                                 style={{container: {flexDirection: 'row', justifyContent: 'flex-start'}}}
@@ -109,7 +116,7 @@ class HomeScreen extends Component {
                                 onPress={this.reportattendence}
                             />
                         </View>
-                    ]}
+                    }
 
                     <View>
                         <Button
@@ -117,7 +124,7 @@ class HomeScreen extends Component {
                             raised
                             icon="edit"
                             text="修改密码"
-                            onPress={this.signout}
+                            onPress={this.editpassword}
                         />
                     </View>
 
@@ -141,6 +148,7 @@ class InitialScreen extends React.Component {
     state = {
         account: null,
         password: null,
+        loading: false
     }
 
     componentDidMount() {
@@ -153,9 +161,13 @@ class InitialScreen extends React.Component {
         )
     }
 
-    onSignInPress = async () => {
+    onSignInPress = async() => {
+        if ((this.state.account == null) || (this.state.password == null)){
+            alert('请填写完整信息')
+            return
+        }
+        this.setState({loading: true})
         const res = await fetch(`http://coursesigninsys.duapp.com/AppSignIn`, {
-        //const res = await fetch(`http://192.168.31.224:3000/signin`, {
             method: 'POST',
             headers: {
                 'Accept': 'application/json',
@@ -171,6 +183,7 @@ class InitialScreen extends React.Component {
             return
         }
 
+        this.setState({loading: false})
         const r = await res.json()
         if (!r.isValid) {
             alert('登陆失败，请检查账号和登陆密码')
@@ -179,49 +192,55 @@ class InitialScreen extends React.Component {
         alert('登陆成功')
         await AsyncStorage.setItem('logInUser', JSON.stringify({
             account: this.state.account,
-            isStudent: r.isStudent  //调试
-            //isStudent: true
+            isStudent: r.isStudent
         }))
         this.props.navigation.dispatch(resetScreen('Home'))
     }
 
     render() {
-        const {navigate} = this.props.navigation;
+        const {navigate} = this.props.navigation
 
         return (
             <View style={styles.container}>
-                <View>
-                    <Text style={styles.headLine}>
-                        学生课程签到系统
-                    </Text>
+                <Text style={styles.headLine}>
+                    学生课程签到系统
+                </Text>
+
+                <View style={styles.inputBox}>
+                    <TextInput style={styles.inputText}
+                               placeholder="学号/教工号"
+                               keyboardType="numeric"
+                               onChangeText={(account) => this.setState({account})}/>
                 </View>
 
-                <View>
-                    <View style={styles.inputBox}>
-                        <TextInput style={styles.inputText}
-                                   placeholder="学号/教工号"
-                                   keyboardType="numeric"
-                                   onChangeText={(account) => this.setState({account})}/>
-                    </View>
-
-                    <View style={styles.inputBox}>
-                        <TextInput style={styles.inputText}
-                                   placeholder="密码"
-                                   secureTextEntry={true}
-                                   onChangeText={(password) => this.setState({password})}/>
-                    </View>
+                <View style={styles.inputBox}>
+                    <TextInput style={styles.inputText}
+                               placeholder="密码"
+                               secureTextEntry={true}
+                               onChangeText={(password) => this.setState({password})}/>
                 </View>
 
 
                 <View style={styles.buttonBox}>
-                    <View style={styles.signInButton}>
-                        <Button
-                            raised primary
-                            icon="check"
-                            onPress={this.onSignInPress}
-                            text="登陆"
-                        />
-                    </View>
+                    {this.state.loading ?
+                        <View style={styles.signInButton}>
+                            <Button
+                                raised
+                                disabled
+                                icon="check"
+                                text="登陆中..."
+                            />
+                        </View> :
+                        <View style={styles.signInButton}>
+                            <Button
+                                raised
+                                primary
+                                icon="check"
+                                onPress={this.onSignInPress}
+                                text="登陆"
+                            />
+                        </View>
+                    }
                     <View style={styles.signUpButton}>
                         <Button
                             onPress={() => navigate('Register')}
@@ -287,7 +306,7 @@ const Initial = StackNavigator({
     FindBcn: {
         screen: BcnScreen,
     },
-    EditCode: {
+    Edit: {
         screen: EditScreen,
     },
     TCurr: {

@@ -34,7 +34,7 @@ export class checkScreen extends Component {
             if (data.beacons.length) {
                 let tmp = data.beacons
                 console.log("closest beacon :", tmp.sort(this.sort_by('rssi')))
-                this.setState({uuid: tmp[0].uuid})
+                this.setState({uuid: tmp[0].uuid.toUpperCase()})
                 this.onFoundBeacon()
             }
         });
@@ -85,6 +85,7 @@ export class checkScreen extends Component {
     }
 
     fetchresult = async() => {
+        this.setState({isRecord: false})
         const res = await fetch(`${config.server}/CheckAttendence`, {
             method: 'POST',
             headers: {
@@ -93,7 +94,6 @@ export class checkScreen extends Component {
             },
             body: JSON.stringify({
                 signinReq: "0",
-                //"uuid": "E2C56DB5-DFFB-48D2-B060-D0F5A71096E0",
                 uuid: this.state.uuid,
                 time: "2"
             })

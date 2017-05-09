@@ -4,45 +4,70 @@ import {
     Text,
     TextInput,
     View,
+    AsyncStorage
 } from 'react-native';
-import { Toolbar, Button} from 'react-native-material-ui';
+import {Toolbar, Button} from 'react-native-material-ui';
 import config from '../config.json'
 
 export class EditScreen extends Component {
     state = {
+        account: '',
+        isStudent: '',
+        loading: false,
         preCode: '',
-        curCode: ''
+        newCode: ''
     }
 
-    handleEdit = () => {
-        const {params} = this.state
-        fetch(`${config.server}/EditPassword`, {
+    componentWillMount() {
+        AsyncStorage.getItem('logInUser').then(
+            logInUser => {
+                if (logInUser) {
+                    const tmp = JSON.parse(logInUser)
+                    this.setState({account: tmp.account, isStudent: tmp.isStudent})
+                }
+            }
+        )
+    }
+
+    handleEdit = async() => {
+        if ((this.state.preCode == null) || (this.state.newCode == null)){
+            alert('请填写完整信息')
+            return
+        }
+        if(this.state.preCode === this.state.newCode) {
+            alert('请使用新密码')
+            return
+        }
+        this.setState({loading: true})
+        const res = await fetch(`${config.server}/AppRegister`, {
             method: 'POST',
             headers: {
                 'Accept': 'application/json',
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify({
-                preCode: params.preCode,
-                curCode: params.curCode
-            }).then(res => {
-                if(!res.ok) {
-                    alert('与服务器连接失败')
-                    return
-                }
-                return res.json().then(r => {
-                    if(!isValid) {
-                        alert('修改失败，请重试')
-                        return
-                    }
-                    alert('修改成功，请重新登陆')
-                })
+                account: this.state.account,
+                password: this.state.newCode,
+                status: this.state.isStudent
             })
         })
+
+        this.setState({loading: false})
+        if (!res.ok) {
+            alert('与服务器的连接失败')
+            return
+        }
+        const r = await res.json()
+        if (!r.isValid) {
+            alert('修改失败')
+            return
+        }
+        alert('修改成功')
     }
 
+
     render() {
-        const { goBack } = this.props.navigation;
+        const {goBack} = this.props.navigation;
 
         return (
             <View style={styles.container}>
@@ -64,16 +89,23 @@ export class EditScreen extends Component {
                         <TextInput style={styles.inputText}
                                    placeholder="新密码"
                                    secureTextEntry={true}
-                                   onChangeText={(curCode) => this.setState({curCode})}/>
+                                   onChangeText={(newCode) => this.setState({newCode})}/>
                     </View>
 
                     <View style={styles.buttonBox}>
-                        <Button
-                            raised primary
-                            icon="check"
-                            text="确认修改"
-                            onPress={this.handleEdit}
-                        />
+                        {this.state.loading ?
+                            <Button
+                                raised
+                                disabled
+                                text="正在修改..."
+                            /> :
+                            <Button
+                                raised primary
+                                icon="check"
+                                text="确认修改"
+                                onPress={this.handleEdit}
+                            />
+                        }
                     </View>
                 </View>
 
@@ -88,7 +120,7 @@ const styles = StyleSheet.create({
     },
     inputField: {
         flex: 1,
-        alignItems:'center',
+        alignItems: 'center',
     },
     inputBox: {
         alignItems: 'center',

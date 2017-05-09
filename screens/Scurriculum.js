@@ -8,11 +8,13 @@ import {
     AsyncStorage
 } from 'react-native';
 import {Toolbar, ListItem, Subheader} from 'react-native-material-ui'
+import Spinner from 'react-native-loading-spinner-overlay'
 import config from '../config.json'
 
 export class SCurrScreen extends Component {
     state = {
         account: null,
+        loading: true,
         curr: []
     }
 
@@ -35,11 +37,11 @@ export class SCurrScreen extends Component {
                 id: this.state.account
             })
         })
+        this.setState({loading: false})
         if (!res.ok) {
             alert('没有符合条件的课程')
             return
         }
-
         const r = await res.json()
         const tmp = [].concat(this.state.curr, r)
         this.setState({curr: tmp})
@@ -60,7 +62,15 @@ export class SCurrScreen extends Component {
                     centerElement="学生课程信息"
                     onLeftElementPress={() => goBack()}
                 />
-
+                {this.state.loading ?
+                    <Spinner
+                        visible={true}
+                        textContent={"Loading..."}
+                    /> :
+                    <Spinner
+                        visible={false}
+                    />
+                }
                 {data.curr.map((v, index) =>
                     <View style={{flex: 1}} key={index}>
                         <Subheader

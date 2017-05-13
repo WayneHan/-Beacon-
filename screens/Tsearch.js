@@ -7,16 +7,16 @@ import {
     ScrollView,
     AsyncStorage
 } from 'react-native';
-import {Toolbar, Button, ListItem} from 'react-native-material-ui'
+import {Toolbar, Button, ListItem, Subheader} from 'react-native-material-ui'
 import config from '../config.json'
 
 export class SearchScreen extends Component {
     state = {
         account: '',
-        course: '',
-        stuAccount: '',
+        course: null,
+        queryclass: null,
         loading: false,
-        record: null
+        record: []
     }
 
     componentWillMount() {
@@ -24,17 +24,23 @@ export class SearchScreen extends Component {
             logInUser => {
                 if (logInUser) {
                     const tmp = JSON.parse(logInUser)
-                    this.setState({accout: tmp.account})
+                    this.setState({account: tmp.account})
                 }
             }
         )
     }
 
-    searchPress = async() => {
-        if ((this.state.stuAccount == null) || (this.state.course == null)){
-            alert('请填写完整信息')
+    searchPress = () => {
+        console.log(this.state)
+        if (!this.state.queryclass) {
+            alert('请填写班级号')
             return
         }
+        this.state.course ? this.fetchcourse() : this.fetchclass()
+
+    }
+
+    fetchcourse = async() => {
         this.setState({loading: true})
         const res = await fetch(`${config.server}/Message`, {
             method: 'POST',
@@ -43,9 +49,33 @@ export class SearchScreen extends Component {
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify({
-                queryType: "2",
-                course: this.state.course,
-                id: this.state.stuAccount,
+                queryType: "4",
+                queryclass: this.state.queryclass,
+                course: this.state.course
+            })
+        })
+        this.setState({loading: false})
+        if (!res.ok) {
+            alert('与服务器连接失败')
+            return
+        }
+
+        const r = await res.json()
+        const tmp = [].concat(this.state.record, r)
+        this.setState({record: tmp})
+    }
+
+    fetchclass = async() => {
+        this.setState({loading: true})
+        const res = await fetch(`${config.server}/Message`, {
+            method: 'POST',
+            headers: {
+                'Accepet': 'application/json',
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                queryType: "3",
+                queryclass: this.state.queryclass
             })
         })
 
@@ -56,9 +86,9 @@ export class SearchScreen extends Component {
         }
 
         const r = await res.json()
-        this.setState({record: r})
+        const tmp = [].concat(this.state.record, r)
+        this.setState({record: tmp})
     }
-
 
     addRecord = async() => {
         const res = await fetch(`${config.server}/SignInChange`, {
@@ -103,26 +133,75 @@ export class SearchScreen extends Component {
         this.searchPress()
     }
 
+    renderRecord() {
+        const {record} = this.state
+        const data = {record}
+
+        return (
+            <View>
+                {data.record.map((v, index) =>
+                    <View key={index}>
+                        <Subheader
+                            text={`${index + 1}`}
+                        />
+                        <ListItem
+                            divider
+                            leftElement={<Text>姓名</Text>}
+                            centerElement={`${v.studentname}`}
+                        />
+                        <ListItem
+                            divider
+                            leftElement={<Text>课程名称</Text>}
+                            centerElement={`${v.course}`}
+                        />
+                        <ListItem
+                            divider
+                            leftElement={<Text>签到次数</Text>}
+                            centerElement={`${v.total}`}
+                        />
+                        <View style={styles.buttonBox}>
+                            <Button
+                                primary
+                                raised
+                                icon="exposure-plus-1"
+                                text="次数"
+                                onPress={this.addRecord}
+                            />
+                            <Button
+                                primary
+                                raised
+                                icon="exposure-neg-1"
+                                text="次数"
+                                onPress={this.reduceRecord}
+                            />
+                        </View>
+                    </View>
+                )}
+            </View>
+        )
+    }
+
     render() {
         const {goBack} = this.props.navigation
+
         return (
             <ScrollView style={styles.container}>
                 <Toolbar
                     leftElement="arrow-back"
-                    centerElement="修改记录"
+                    centerElement="查询考勤记录"
                     onLeftElementPress={() => goBack()}
                 />
                 <View style={styles.inputBox}>
                     <TextInput
                         style={styles.inputText}
-                        placeholder="课程名称"
-                        onChangeText={course => this.setState({course})}
+                        placeholder="班级号（必填）"
+                        keyboardType="numeric"
+                        onChangeText={queryclass => this.setState({queryclass})}
                     />
                     <TextInput
                         style={styles.inputText}
-                        placeholder="学号"
-                        keyboardType="numeric"
-                        onChangeText={stuAccount => this.setState({stuAccount})}
+                        placeholder="课程名称"
+                        onChangeText={course => this.setState({course})}
                     />
                 </View>
 
@@ -146,41 +225,8 @@ export class SearchScreen extends Component {
 
                 </View>
 
-
                 {this.state.record &&
-                <View>
-                    <ListItem
-                        divider
-                        leftElement={<Text>姓名</Text>}
-                        centerElement={`${this.state.record.studentname}`}
-                    />
-                    <ListItem
-                        divider
-                        leftElement={<Text>班级</Text>}
-                        centerElement={`${this.state.record.class}`}
-                    />
-                    <ListItem
-                        divider
-                        leftElement={<Text>签到次数</Text>}
-                        centerElement={`${this.state.record.total}`}
-                    />
-                    <View style={styles.buttonBox}>
-                        <Button
-                            primary
-                            raised
-                            icon="exposure-plus-1"
-                            text="次数"
-                            onPress={this.addRecord}
-                        />
-                        <Button
-                            primary
-                            raised
-                            icon="exposure-neg-1"
-                            text="次数"
-                            onPress={this.reduceRecord}
-                        />
-                    </View>
-                </View>
+                this.renderRecord()
                 }
 
             </ScrollView>

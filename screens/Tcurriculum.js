@@ -5,16 +5,21 @@ import {
     TextInput,
     View,
     ScrollView,
-    AsyncStorage
+    AsyncStorage,
+    DeviceEventEmitter
 } from 'react-native';
-import { Toolbar, ListItem,Subheader} from 'react-native-material-ui';
+import { Toolbar, ListItem, Button, Subheader} from 'react-native-material-ui'
 import config from '../config.json'
 import Spinner from 'react-native-loading-spinner-overlay'
+import Beacons from 'react-native-beacons-manager'
 
 export class TCurrScreen extends Component {
     state = {
         account: null,
         loading: true,
+        uuid: '',
+        isRecord: false,
+        beacons: {},
         curr: []
     }
 
@@ -49,7 +54,159 @@ export class TCurrScreen extends Component {
     }
 
     componentWillMount() {
-        this.fetchscurr()
+        if(this.state.loading) {
+            this.fetchscurr()
+        }
+    }
+
+    componentDidMount() {
+        DeviceEventEmitter.addListener('beaconsDidRange', (data) => {
+            console.log('Found :', data.beacons)
+            if (data.beacons.length) {
+                let tmp = data.beacons
+                console.log("closest beacon :", tmp.sort(this.sort_by('rssi')))
+                this.setState({uuid: tmp[0].uuid.toUpperCase()})
+                this.onFoundBeacon()
+            }
+        });
+    }
+
+    onFoundBeacon() {
+        if (this.found) {
+            return
+        }
+        this.found = true
+
+        this.fetchresult()
+        Beacons.stopRangingBeaconsInRegion('REGION1').then(
+            () => {
+                console.log('****** stop ranging beacons ******')
+            }
+        ).catch(
+            error => console.log('stop ranging beacons failed')
+        )
+    }
+
+    sort_by = (field, reverse, primer) => {
+        let key = primer ?
+            (x) => {
+                return primer(x[field])
+            } : (x) => {
+                return x[field]
+            };
+        reverse = !reverse ? 1 : -1;
+
+        return (a, b) => {
+            return a = key(a), b = key(b), reverse * ((a > b) - (b > a));
+        }
+    }
+
+    checkatt = () => {
+        Beacons.detectIBeacons()
+        this.setState({isRecord: true})
+
+        this.found = false
+        Beacons.startRangingBeaconsInRegion('REGION1').then(
+            () => console.log('****** start ranging beacons ******')
+        ).catch(
+            error => {
+                console.log('start ranging beacons failed')
+                alert('搜索beacon失败，请重试')
+            }
+        )
+    }
+
+    transferDay = (day) => {
+        switch (day) {
+            case 0:
+                return '星期日'
+            case 1:
+                return '星期一'
+            case 2:
+                return '星期二'
+            case 3:
+                return '星期三'
+            case 4:
+                return '星期四'
+            case 5:
+                return '星期五'
+            case 6:
+                return '星期六'
+        }
+    }
+
+    fetchresult = async () => {
+        const date = new Date()
+        const day = date.getDay()
+        const hours = date.getHours()
+        let week = this.transferDay(day)
+
+        console.log(JSON.stringify({
+            signinReq: "0",
+            uuid: this.state.uuid,
+            week: week,
+            hours: hours,
+            minute: "30"
+        }))
+        const res = await fetch(`${config.server}/CheckAttendence`, {
+            method: 'POST',
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                signinReq: "0",
+                uuid: this.state.uuid,
+                week: week,
+                hours: hours,
+                minute: "30"
+            })
+        })
+        console.log(res)
+        if (!res.ok) {
+            this.setState({isRecord: false})
+            alert('与服务器的连接失败')
+            return
+        }
+
+        const r = await res.json()
+        if (!r.isValid) {
+            alert('发起考勤失败，请重试')
+            return
+        }
+        alert('发起考勤成功，请通知学生及时签到')
+        this.setState({isRecord: true})
+
+    }
+
+    closeRecord = async () => {
+        const res = await fetch(`${config.server}/CloseSignIn`, {
+            method: 'POST',
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                uuid: this.state.uuid
+            })
+        })
+
+        if (!res.ok) {
+            alert('与服务器的连接失败')
+            return
+        }
+
+        const r = res.json()
+        this.setState({isRecord: false})
+        if (!r.isValid) {
+            alert('服务器已经结束考勤')
+            return
+        }
+        alert('考勤已结束')
+    }
+
+    componentWillUnmount() {
+        this.beaconDidRange = null
     }
 
     render() {
@@ -90,9 +247,33 @@ export class TCurrScreen extends Component {
                         />
                         <ListItem
                             divider
-                            leftElement={<Text>课程代码</Text>}
-                            centerElement={`${v.allocationcode}`}
+                            leftElement={<Text>课室</Text>}
+                            centerElement={`${v.classroom}`}
                         />
+                        <ListItem
+                            divider
+                            leftElement={<Text>课室</Text>}
+                            centerElement={`${v.time}`}
+                        />
+                        <ListItem
+                            divider
+                            leftElement={<Text>日期</Text>}
+                            centerElement={`${v.week}`}
+                        />
+                        {this.state.isRecord ?
+                            <Button
+                                raised
+                                accent
+                                text="结束考勤"
+                                onPress={this.closeRecord}
+                            /> :
+                            <Button
+                                primary
+                                raised
+                                text="发起考勤"
+                                onPress={this.checkatt}
+                            />
+                        }
                     </View>
                     )
                 }

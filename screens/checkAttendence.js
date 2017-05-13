@@ -29,15 +29,15 @@ export class checkScreen extends Component {
     }
 
     componentDidMount() {
-        DeviceEventEmitter.addListener('beaconsDidRange', (data) => {
-            console.log('Found :', data.beacons)
-            if (data.beacons.length) {
-                let tmp = data.beacons
-                console.log("closest beacon :", tmp.sort(this.sort_by('rssi')))
-                this.setState({uuid: tmp[0].uuid.toUpperCase()})
-                this.onFoundBeacon()
-            }
-        });
+            DeviceEventEmitter.addListener('beaconsDidRange', (data) => {
+                console.log('Found :', data.beacons)
+                if (data.beacons.length) {
+                    let tmp = data.beacons
+                    console.log("closest beacon :", tmp.sort(this.sort_by('rssi')))
+                    this.setState({uuid: tmp[0].uuid.toUpperCase()})
+                    this.onFoundBeacon()
+                }
+            });
     }
 
     onFoundBeacon() {
@@ -84,7 +84,38 @@ export class checkScreen extends Component {
         )
     }
 
+    transferDay = (day) => {
+        switch (day) {
+            case 0:
+                return '星期日'
+            case 1:
+                return '星期一'
+            case 2:
+                return '星期二'
+            case 3:
+                return '星期三'
+            case 4:
+                return '星期四'
+            case 5:
+                return '星期五'
+            case 6:
+                return '星期六'
+        }
+    }
+
     fetchresult = async() => {
+        const date = new Date()
+        const day = date.getDay()
+        const hours = date.getHours()
+        let week = this.transferDay(day)
+
+        console.log(JSON.stringify({
+            signinReq: "0",
+            uuid: this.state.uuid,
+            week: week,
+            hours: hours,
+            minute: "30"
+        }))
         this.setState({isRecord: false})
         const res = await fetch(`${config.server}/CheckAttendence`, {
             method: 'POST',
@@ -95,7 +126,9 @@ export class checkScreen extends Component {
             body: JSON.stringify({
                 signinReq: "0",
                 uuid: this.state.uuid,
-                time: "2"
+                week: week,
+                hours: hours,
+                minute: "30"
             })
         })
         console.log(res)
@@ -114,7 +147,7 @@ export class checkScreen extends Component {
 
     }
 
-    closeRecord = async () => {
+    closeRecord = async() => {
         const res = await fetch(`${config.server}/CloseSignIn`, {
             method: 'POST',
             headers: {
@@ -126,14 +159,14 @@ export class checkScreen extends Component {
             })
         })
 
-        if(!res.ok) {
+        if (!res.ok) {
             alert('与服务器的连接失败')
             return
         }
 
         const r = res.json()
         this.setState({isRecord: false})
-        if(!r.isValid) {
+        if (!r.isValid) {
             alert('服务器已经结束考勤')
             return
         }

@@ -88,34 +88,10 @@ class HomeScreen extends Component {
                             style={{container: {flexDirection: 'row', justifyContent: 'flex-start'}}}
                             raised
                             icon="mode-edit"
-                            text="修改签到记录"
+                            text="查看考勤记录"
                             onPress={() => navigate('Search', {account: this.state.account})}
                         />
                     </View>
-                    }
-
-                    {!this.state.isStudent &&
-                    <View>
-                        <Button
-                            style={{container: {flexDirection: 'row', justifyContent: 'flex-start'}}}
-                            raised
-                            icon="access-alarm"
-                            text="发起考勤"
-                            onPress={this.checkattendence}
-                        />
-                    </View>
-                    }
-
-                    {this.state.isStudent &&
-                        <View>
-                            <Button
-                                style={{container: {flexDirection: 'row', justifyContent: 'flex-start'}}}
-                                raised
-                                icon="location-on"
-                                text="考勤签到"
-                                onPress={this.reportattendence}
-                            />
-                        </View>
                     }
 
                     <View>

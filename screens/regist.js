@@ -23,7 +23,11 @@ export class RegistScreen extends Component {
             return
         }
         this.setState({loading: true})
-        const status = this.state.isStudent === "true" ? true : false
+        const status = this.state.isStudent
+        console.log(JSON.stringify({
+            account: this.state.account,
+            password: this.state.password,
+            status: status}))
         const res = await fetch(`${config.server}/AppRegister`, {
             method: 'POST',
             headers: {
@@ -68,8 +72,8 @@ export class RegistScreen extends Component {
                         <Picker
                             selectedValue={this.state.isStudent}
                             onValueChange={(status) => this.setState({isStudent: status})}>
-                            <Picker.Item label="学生" value="true" />
-                            <Picker.Item label="教师" value="false" />
+                            <Picker.Item label="学生" value={true} />
+                            <Picker.Item label="教师" value={false} />
                         </Picker>
 
                     </View>

@@ -34,7 +34,7 @@ export class reportScreen extends Component {
             if (data.beacons.length) {
                 let tmp = data.beacons
                 console.log("closest beacon :", tmp.sort(this.sort_by('rssi')))
-                this.setState({uuid: tmp[0].uuid})
+                this.setState({uuid: tmp[0].uuid.toUpperCase()})
                 this.onFoundBeacon()
             }
         });
@@ -85,6 +85,11 @@ export class reportScreen extends Component {
     }
 
     fetchresult = async () => {
+        console.log(JSON.stringify({
+            checkType: "0",
+            studentid: this.state.account,
+            uuid: this.state.uuid
+        }))
         const res = await fetch(`${config.server}/ReportAttendence`, {
             method: 'POST',
             headers: {

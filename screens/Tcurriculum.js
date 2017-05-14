@@ -73,6 +73,7 @@ export class TCurrScreen extends Component {
                     error => console.log('stop ranging beacons failed')
                 )
                 this.setState({isRecord: false})
+                this.flag = 1
             }
 
             if (data.beacons.length) {

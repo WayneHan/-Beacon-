@@ -31,7 +31,6 @@ export class SearchScreen extends Component {
     }
 
     searchPress = () => {
-        console.log(this.state)
         if (!this.state.queryclass) {
             alert('请填写班级号')
             return
@@ -61,7 +60,7 @@ export class SearchScreen extends Component {
         }
 
         const r = await res.json()
-        const tmp = [].concat(this.state.record, r)
+        const tmp = [].concat([], r)
         this.setState({record: tmp})
     }
 
@@ -86,11 +85,49 @@ export class SearchScreen extends Component {
         }
 
         const r = await res.json()
-        const tmp = [].concat(this.state.record, r)
+        const tmp = [].concat([], r)
         this.setState({record: tmp})
     }
 
-    addRecord = async() => {
+    searchRecord = async () => {
+        if((!this.state.queryclass) || (!this.state.course)) {
+            alert('请填写完整的班级号以及课程名称')
+            return
+        }
+        this.setState({loading: true})
+        const res = await fetch(`${config.server}/Message`, {
+            method: 'POST',
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                queryType: "5",
+                queryclass: this.state.queryclass,
+                course: this.state.course
+            })
+        })
+        console.log(res)
+        this.setState({loading: false})
+        if(!res.ok) {
+            alert('与服务器的连接失败')
+            return
+        }
+        const r = await res.json()
+        if(r.isValid == false) {
+            alert('查询失败，请重试')
+            return
+        }
+        const tmp = [].concat([], r)
+        this.setState({record: tmp})
+    }
+
+    addRecord = async(account, course) => {
+        console.log(JSON.stringify({
+            changeType: "0",
+            course: course,
+            studentid: account
+        }))
         const res = await fetch(`${config.server}/SignInChange`, {
             method: 'POST',
             headers: {
@@ -99,8 +136,8 @@ export class SearchScreen extends Component {
             },
             body: JSON.stringify({
                 changeType: "0",
-                course: this.state.course,
-                studentid: this.state.stuAccount
+                course: course,
+                studentid: account
             })
         })
 
@@ -112,7 +149,7 @@ export class SearchScreen extends Component {
         this.searchPress()
     }
 
-    reduceRecord = async() => {
+    reduceRecord = async(account, course) => {
         const res = await fetch(`${config.server}/SignInChange`, {
             method: 'POST',
             headers: {
@@ -121,8 +158,8 @@ export class SearchScreen extends Component {
             },
             body: JSON.stringify({
                 changeType: "1",
-                course: this.state.course,
-                studentid: this.state.stuAccount
+                course: course,
+                studentid: account
             })
         })
         if (!res.ok) {
@@ -151,6 +188,11 @@ export class SearchScreen extends Component {
                         />
                         <ListItem
                             divider
+                            leftElement={<Text>学号</Text>}
+                            centerElement={`${v.studentid}`}
+                        />
+                        <ListItem
+                            divider
                             leftElement={<Text>课程名称</Text>}
                             centerElement={`${v.course}`}
                         />
@@ -165,14 +207,14 @@ export class SearchScreen extends Component {
                                 raised
                                 icon="exposure-plus-1"
                                 text="次数"
-                                onPress={this.addRecord}
+                                onPress={() => this.addRecord(v.studentid, v.course)}
                             />
                             <Button
                                 primary
                                 raised
                                 icon="exposure-neg-1"
                                 text="次数"
-                                onPress={this.reduceRecord}
+                                onPress={() => this.reduceRecord(v.studentid, v.course)}
                             />
                         </View>
                     </View>
@@ -223,6 +265,22 @@ export class SearchScreen extends Component {
                         }
                     </View>
 
+                    <View style={styles.searchButton}>
+                        {this.state.loading ?
+                            <Button
+                                raised
+                                disabled
+                                text="搜索中..."
+                            /> :
+                            <Button
+                                primary
+                                raised
+                                icon="search"
+                                text="搜索刚刚考勤的签到结果"
+                                onPress={this.searchRecord}
+                            />
+                        }
+                    </View>
                 </View>
 
                 {this.state.record &&
@@ -251,7 +309,8 @@ const
             alignItems: 'center'
         },
         searchButton: {
-            width: 300
+            width: 300,
+            margin: 10
         },
         buttonBox: {
             flexDirection: 'row',

@@ -62,6 +62,19 @@ export class TCurrScreen extends Component {
     componentDidMount() {
         DeviceEventEmitter.addListener('beaconsDidRange', (data) => {
             console.log('Found :', data.beacons)
+            this.flag += 1
+            if(this.flag >= 8 && !this.state.uuid) {
+                alert('无法搜索Beacon，请检查是否打开蓝牙或者附近是否存在Beacon设备')
+                Beacons.stopRangingBeaconsInRegion('REGION1').then(
+                    () => {
+                        console.log('****** stop ranging beacons ******')
+                    }
+                ).catch(
+                    error => console.log('stop ranging beacons failed')
+                )
+                this.setState({isRecord: false})
+            }
+
             if (data.beacons.length) {
                 let tmp = data.beacons
                 console.log("closest beacon :", tmp.sort(this.sort_by('rssi')))
@@ -106,6 +119,7 @@ export class TCurrScreen extends Component {
         this.setState({isRecord: true})
 
         this.found = false
+        this.flag = 1
         Beacons.startRangingBeaconsInRegion('REGION1').then(
             () => console.log('****** start ranging beacons ******')
         ).catch(
